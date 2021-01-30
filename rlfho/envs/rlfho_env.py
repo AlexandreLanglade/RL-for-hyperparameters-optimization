@@ -21,8 +21,8 @@ class RlfhoEnv(gym.Env):
     self.action_space = spaces.Discrete(3)
     #self.observation_space = spaces.Box(low=np.array([0.0]),high=np.array([1.0]))
     self.learning_rate = 0.5 #hyperparametre valeur initial
-    self.duree_max = 60
-    self.accuracy = run()
+    self.duree_max = 10
+    self.accuracy = self.run()
 
 
   def step(self, action):
@@ -31,7 +31,7 @@ class RlfhoEnv(gym.Env):
     self.duree_max -= 1
 
     accuracy_temp = self.accuracy
-    self.accuracy = run()
+    self.accuracy = self.run()
 
     #calcul reward
     if self.accuracy > accuracy_temp:
@@ -43,20 +43,41 @@ class RlfhoEnv(gym.Env):
       done = True
     else:
       done = False
-
-    return self.learning_rate, reward, done, self.info
+    print("Learning rate : {}".format(self.learning_rate))
+    return self.learning_rate, reward, done#, info,self.accuracy
 
 
   def reset(self):
     # Reset the environment's state. Returns observation.
     self.learning_rate = 0.5 #hyperparametre valeur initial
     self.duree_max = 60
-    self.accuracy = run()
+    self.accuracy = self.run()
     return self.learning_rate
 
   def run(self):
     sgd = tf.keras.optimizers.SGD(learning_rate=self.learning_rate)
-    model.compile(optimizer=sgd,loss='sparse_categorical_crossentropy',metrics=['accuracy'])
-    model.fit(train_images, train_labels, validation_split = 0.1, epochs=5)
-    test_loss, test_acc = model.evaluate(test_images,  test_labels, verbose=2)
+    self.model.compile(optimizer=sgd,loss='sparse_categorical_crossentropy',metrics=['accuracy'])
+    self.model.fit(self.train_images, self.train_labels, validation_split = 0.1, epochs=2)
+    test_loss,test_acc = self.model.evaluate(self.test_images,  self.test_labels, verbose=2)
     return test_acc
+
+
+######
+    
+
+env = RlfhoEnv()
+
+#learning_rate = env.reset()
+done = False
+score = 0
+while not done:
+    action = env.action_space.sample()
+    observation, reward, done = env.step(action)
+    score += reward
+    #print("accuracy : {}".format(accuracy))
+print("score : {}".format(score))
+        
+        
+    
+
+
