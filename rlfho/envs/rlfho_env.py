@@ -18,22 +18,27 @@ class RlfhoEnv(gym.Env):
 
 
   def __init__(self):
-    self.action_space = spaces.Discrete(3)
-    #self.observation_space = spaces.Box(low=np.array([0.0]),high=np.array([1.0]))
-    self.learning_rate = 0.5 #hyperparametre valeur initial
+    self.action_space = spaces.Discrete(4)
+    self.opti = tf.keras.optimizers.SGD()
     self.duree_max = 10
     self.accuracy = self.run()
 
 
   def step(self, action):
-    # Step the environment by one timestep. Returns observation, reward, done, info.
-    self.learning_rate += (action-1)*0.1
+    if action == 0:
+      self.opti = tf.keras.optimizers.SGD()
+    elif action == 1:
+      self.opti = tf.keras.optimizers.Adam()
+    elif action == 2:
+      self.opti = tf.keras.optimizers.Adadelta()
+    else:
+      self.opti = tf.keras.optimizers.Adagrad()
+    
     self.duree_max -= 1
 
     accuracy_temp = self.accuracy
     self.accuracy = self.run()
 
-    #calcul reward
     if self.accuracy > accuracy_temp:
       reward = 1
     else:
@@ -43,41 +48,18 @@ class RlfhoEnv(gym.Env):
       done = True
     else:
       done = False
-    print("Learning rate : {}".format(self.learning_rate))
-    return self.learning_rate, reward, done#, info,self.accuracy
+    
+    return self.opti, reward, done
 
 
   def reset(self):
-    # Reset the environment's state. Returns observation.
-    self.learning_rate = 0.5 #hyperparametre valeur initial
-    self.duree_max = 60
+    self.opti = tf.keras.optimizers.SGD()
+    self.duree_max = 10
     self.accuracy = self.run()
-    return self.learning_rate
+    return self.opti
 
   def run(self):
-    sgd = tf.keras.optimizers.SGD(learning_rate=self.learning_rate)
-    self.model.compile(optimizer=sgd,loss='sparse_categorical_crossentropy',metrics=['accuracy'])
-    self.model.fit(self.train_images, self.train_labels, validation_split = 0.1, epochs=2)
+    self.model.compile(optimizer=self.opti,loss='sparse_categorical_crossentropy',metrics=['accuracy'])
+    self.model.fit(self.train_images, self.train_labels, validation_split = 0.1, epochs=3)
     test_loss,test_acc = self.model.evaluate(self.test_images,  self.test_labels, verbose=2)
     return test_acc
-
-
-######
-    
-
-env = RlfhoEnv()
-
-#learning_rate = env.reset()
-done = False
-score = 0
-while not done:
-    action = env.action_space.sample()
-    observation, reward, done = env.step(action)
-    score += reward
-    #print("accuracy : {}".format(accuracy))
-print("score : {}".format(score))
-        
-        
-    
-
-
