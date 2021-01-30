@@ -1,10 +1,10 @@
 from gym.envs.registration import register
 
 register(
-    id='foo-v0',
-    entry_point='gym_foo.envs:FooEnv',
+    id='rlfho-v0',
+    entry_point='rlfho.envs:RlfhoEnv',
 )
 register(
-    id='foo-extrahard-v0',
-    entry_point='gym_foo.envs:FooExtraHardEnv',
+    id='rlfho-extrahard-v0',
+    entry_point='rlfho.envs:RlfhoExtraHardEnv',
 )

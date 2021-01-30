@@ -1,2 +1,2 @@
-from gym_foo.envs.foo_env import FooEnv
-from gym_foo.envs.foo_extrahard_env import FooExtraHardEnv
+from rlfho.envs.rlfho_env import RlfhoEnv
+from rlfho.envs.rlfho_extrahard_env import RlfhoExtraHardEnv
