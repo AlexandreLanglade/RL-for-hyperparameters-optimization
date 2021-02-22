@@ -19,14 +19,14 @@ class RlfhoEnv(gym.Env):
 
 
   def __init__(self):
-    self.action_space = spaces.Box(low   = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
-                                   high  = np.array([7.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]),
+    self.action_space = spaces.Box(low   = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+                                   high  = np.array([7.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]),
                                    dtype = np.float32)
     self.observation_space = spaces.Box(low   = np.array([0.0, 0.0]),
-                                        high  = np.array([100.0, 3600.0]),
+                                        high  = np.array([1.0, 3600.0]),
                                         dtype = np.float32)
     self.opti = tf.keras.optimizers.SGD()
-    self.duree_max = 70
+    self.duree_max = 10
     t1 = time.time()
     self.accuracy = self.run()
     self.speed = time.time()-t1
@@ -34,41 +34,39 @@ class RlfhoEnv(gym.Env):
 
   def step(self, action):
     if action[0] < 1:
-      lr = action[1]
+      learning_rate = action[1]
       mom = action[2]
       if action[3] < 0.5:
         nest = False
       else:
         nest = True
-      self.opti = tf.keras.optimizers.SGD(learning_rate=lr, momentum=mom, nesterov=nest)
+      self.opti = tf.keras.optimizers.SGD(lr=learning_rate, momentum=mom, nesterov=nest)
     elif action[0] < 2:
-      lr = action[1]
-      mom = action[2]
+      learning_rate = action[1]
       r = action[4]
-      self.opti = tf.keras.optimizers.RMSprop(learning_rate=lr,rho=r,momentum=mom)
+      self.opti = tf.keras.optimizers.RMSprop(lr=learning_rate,rho=r)
     elif action[0] < 3:
-      lr = action[1]
+      learning_rate = action[1]
       b1 = action[5]
       b2 = action[6]
-      self.opti = tf.keras.optimizers.Adam(learning_rate=lr,beta_1=b1,beta_2=b2)
+      self.opti = tf.keras.optimizers.Adam(lr=learning_rate,beta_1=b1,beta_2=b2)
     elif action[0] < 4:
-      lr = action[1]
+      learning_rate = action[1]
       r = action[4]
-      self.opti = tf.keras.optimizers.Adadelta(learning_rate=lr, rho=r)
+      self.opti = tf.keras.optimizers.Adadelta(lr=learning_rate, rho=r)
     elif action[0] < 5:
-      lr = action[1]
-      iav = action[7]
-      self.opti = tf.keras.optimizers.Adagrad(learning_rate=lr,initial_accumulator_value=iav)
+      learning_rate = action[1]
+      self.opti = tf.keras.optimizers.Adagrad(lr=learning_rate)
     elif action[0] < 6:
-      lr = action[1]
+      learning_rate = action[1]
       b1 = action[5]
       b2 = action[6]
-      self.opti = tf.keras.optimizers.Adamax(learning_rate=lr, beta_1=b1, beta_2=b2)
+      self.opti = tf.keras.optimizers.Adamax(lr=learning_rate, beta_1=b1, beta_2=b2)
     else:
-      lr = action[1]
+      learning_rate = action[1]
       b1 = action[5]
       b2 = action[6]
-      self.opti = tf.keras.optimizers.Nadam(learning_rate=lr, beta_1=b1, beta_2=b2)
+      self.opti = tf.keras.optimizers.Nadam(lr=learning_rate, beta_1=b1, beta_2=b2)
     
     self.duree_max -= 1
 
@@ -102,13 +100,18 @@ class RlfhoEnv(gym.Env):
 
   def reset(self):
     self.opti = tf.keras.optimizers.SGD()
-    self.duree_max = 70
+    self.duree_max = 10
     t1 = time.time()
     self.accuracy = self.run()
     self.speed = time.time()-t1
     return np.array([self.accuracy, self.speed])
 
   def run(self):
+    self.model = keras.Sequential([
+    keras.layers.Flatten(input_shape=(28, 28)),
+    keras.layers.Dense(100, activation='relu'),
+    keras.layers.Dense(10, activation='softmax'),
+    ])
     self.model.compile(optimizer=self.opti,loss='sparse_categorical_crossentropy',metrics=['accuracy'])
     self.model.fit(self.train_images, self.train_labels, validation_split = 0.1, epochs=3)
     test_loss,test_acc = self.model.evaluate(self.test_images,  self.test_labels, verbose=2)
