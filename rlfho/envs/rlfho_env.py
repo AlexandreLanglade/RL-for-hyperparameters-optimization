@@ -23,8 +23,8 @@ class RlfhoEnv(gym.Env):
     else:
       (self.tric100, self.trlc100), (self.teic100, self.telc100) = keras.datasets.cifar100.load_data()
 
-    self.action_space = spaces.Box(low   = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
-                                   high  = np.array([7.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]),
+    self.action_space = spaces.Box(low   = np.array([0.0, 0.0, 0.0, 0.0]),
+                                   high  = np.array([7.0, 1.0, 1.0, 1.0]),
                                    dtype = np.float32)
     self.observation_space = spaces.Box(low   = np.array([0.0, 0.0]),
                                         high  = np.array([1.0, 3600.0]),
@@ -48,29 +48,29 @@ class RlfhoEnv(gym.Env):
       self.opti = tf.keras.optimizers.SGD(lr=learning_rate, momentum=mom, nesterov=nest)
     elif action[0] < 2:
       learning_rate = action[1]
-      r = action[4]
+      r = action[2]
       self.opti = tf.keras.optimizers.RMSprop(lr=learning_rate,rho=r)
     elif action[0] < 3:
       learning_rate = action[1]
-      b1 = action[5]
-      b2 = action[6]
+      b1 = action[2]
+      b2 = action[3]
       self.opti = tf.keras.optimizers.Adam(lr=learning_rate,beta_1=b1,beta_2=b2)
     elif action[0] < 4:
       learning_rate = action[1]
-      r = action[4]
+      r = action[2]
       self.opti = tf.keras.optimizers.Adadelta(lr=learning_rate, rho=r)
     elif action[0] < 5:
       learning_rate = action[1]
       self.opti = tf.keras.optimizers.Adagrad(lr=learning_rate)
     elif action[0] < 6:
       learning_rate = action[1]
-      b1 = action[5]
-      b2 = action[6]
+      b1 = action[2]
+      b2 = action[3]
       self.opti = tf.keras.optimizers.Adamax(lr=learning_rate, beta_1=b1, beta_2=b2)
     else:
       learning_rate = action[1]
-      b1 = action[5]
-      b2 = action[6]
+      b1 = action[2]
+      b2 = action[3]
       self.opti = tf.keras.optimizers.Nadam(lr=learning_rate, beta_1=b1, beta_2=b2)
     
     self.duree_max -= 1
