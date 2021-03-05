@@ -11,82 +11,17 @@ class RlfhoEnv(gym.Env):
   metadata = {'render.modes': ['human']}
   
   rewards_history = []
+  accuracy_history = []
 
 
-  def __init__(self):
-
-    self.random_data = random.randint(1,3)
-    if(self.random_data == 1):
-      (self.train_images, self.train_labels), (self.test_images, self.test_labels) = keras.datasets.mnist.load_data()
-      self.train_images = self.train_images / 255.0
-      self.test_images = self.test_images / 255.0
-      self.model = keras.Sequential([
-        keras.layers.Flatten(input_shape=(28, 28)),
-        keras.layers.Dense(100, activation='relu'),
-        keras.layers.Dense(10, activation='softmax'),
-    ])
-    elif(self.random_data == 2):
-      (self.train_images, self.train_labels), (self.test_images, self.test_labels) = keras.datasets.cifar10.load_data()
-      self.train_images = self.train_images.astype('float32')
-      self.test_images = self.test_images.astype('float32')
-      self.train_images /= 255
-      self.test_images /= 255
-      self.train_labels = self.train_labels.flatten()
-      self.test_labels = self.test_labels.flatten()
-      input_shape = (32,32,3)
-      self.model = keras.Sequential([
-        keras.layers.Conv2D(32, kernel_size=(3, 3),
-                            activation='relu',
-                            input_shape=input_shape,
-                            padding="same"),  
-        keras.layers.Conv2D(32, kernel_size=(3, 3),
-                            activation='relu'),
-        keras.layers.MaxPooling2D(pool_size=(2, 2)),
-        keras.layers.Dropout(0.4),
-        
-        keras.layers.Conv2D(64, kernel_size=(3, 3),
-                            activation='relu',
-                            input_shape=input_shape,
-                            padding="same"),  
-        keras.layers.Conv2D(64, kernel_size=(3, 3),
-                            activation='relu'),
-        keras.layers.MaxPooling2D(pool_size=(2, 2)),
-        keras.layers.Dropout(0.4),
-        
-        keras.layers.Conv2D(64, kernel_size=(3, 3),
-                            activation='relu',
-                            input_shape=input_shape,
-                            padding="same"),  
-        keras.layers.Conv2D(64, kernel_size=(3, 3),
-                            activation='relu'),
-        keras.layers.MaxPooling2D(pool_size=(2, 2)),
-        keras.layers.Dropout(0.4),
-        
-        keras.layers.Flatten(),
-        
-        keras.layers.Dense(512, activation='relu'),
-        keras.layers.Dropout(0.5),
-        
-        keras.layers.Dense(10, activation='softmax')
-      ])
+  def __init__(self, test):
+    self.test = test
+    if (self.test == False):
+      (self.trim, self.trlm), (self.teim, self.telm) = keras.datasets.mnist.load_data()
+      (self.tric10, self.trlc10), (self.teic10, self.telc10) = keras.datasets.cifar10.load_data()
+      self.random_data = random.randint(1,2) 
     else:
-      (self.train_images, self.train_labels), (self.test_images, self.test_labels) = keras.datasets.cifar100.load_data()
-      input_shape = (32, 32, 3)
-      self.train_images = self.train_images.astype('float32')
-      self.test_images = self.test_images.astype('float32')
-      self.train_images = self.train_images / 255
-      self.test_images = self.test_images / 255
-      self.model = keras.Sequential()
-      self.model.add(keras.layers.Conv2D(32, kernel_size=(3, 3), activation='relu', input_shape=input_shape))
-      self.model.add(keras.layers.MaxPooling2D(pool_size=(2, 2)))
-      self.model.add(keras.layers.Conv2D(64, kernel_size=(3, 3), activation='relu'))
-      self.model.add(keras.layers.MaxPooling2D(pool_size=(2, 2)))
-      self.model.add(keras.layers.Conv2D(128, kernel_size=(3, 3), activation='relu'))
-      self.model.add(keras.layers.MaxPooling2D(pool_size=(2, 2)))
-      self.model.add(keras.layers.Flatten())
-      self.model.add(keras.layers.Dense(256, activation='relu'))
-      self.model.add(keras.layers.Dense(128, activation='relu'))
-      self.model.add(keras.layers.Dense(100, activation='softmax'))
+      (self.tric100, self.trlc100), (self.teic100, self.telc100) = keras.datasets.cifar100.load_data()
 
     self.action_space = spaces.Box(low   = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
                                    high  = np.array([7.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]),
@@ -98,6 +33,7 @@ class RlfhoEnv(gym.Env):
     self.duree_max = 10
     t1 = time.time()
     self.accuracy = self.run()
+    self.accuracy_history.append(self.accuracy)
     self.speed = time.time()-t1
 
 
@@ -143,6 +79,7 @@ class RlfhoEnv(gym.Env):
     speed_temp = self.speed
     t1 = time.time()
     self.accuracy = self.run()
+    self.accuracy_history.append(self.accuracy)
     self.speed = time.time()-t1
 
     delta_acc = np.abs(self.accuracy - accuracy_temp)
@@ -167,70 +104,86 @@ class RlfhoEnv(gym.Env):
     return obs, reward, done, {}
 
 
-  def reset(self):
+  def reset(self):  
+    if (self.test == False):
+      self.random_data = random.randint(1,2)
     self.opti = tf.keras.optimizers.SGD()
     self.duree_max = 10
     t1 = time.time()
     self.accuracy = self.run()
+    self.accuracy_history.append(self.accuracy)
     self.speed = time.time()-t1
     return np.array([self.accuracy, self.speed])
 
   def run(self):
-    if(self.random_data == 1):
-      (self.train_images, self.train_labels), (self.test_images, self.test_labels) = keras.datasets.mnist.load_data()
-      self.train_images = self.train_images / 255.0
-      self.test_images = self.test_images / 255.0
-      self.model = keras.Sequential([
-        keras.layers.Flatten(input_shape=(28, 28)),
-        keras.layers.Dense(100, activation='relu'),
-        keras.layers.Dense(10, activation='softmax'),
-    ])
-    elif(self.random_data == 2):
-      (self.train_images, self.train_labels), (self.test_images, self.test_labels) = keras.datasets.cifar10.load_data()
-      self.train_images = self.train_images.astype('float32')
-      self.test_images = self.test_images.astype('float32')
-      self.train_images /= 255
-      self.test_images /= 255
-      self.train_labels = self.train_labels.flatten()
-      self.test_labels = self.test_labels.flatten()
-      input_shape = (32,32,3)
-      self.model = keras.Sequential([
-        keras.layers.Conv2D(32, kernel_size=(3, 3),
-                            activation='relu',
-                            input_shape=input_shape,
-                            padding="same"),  
-        keras.layers.Conv2D(32, kernel_size=(3, 3),
-                            activation='relu'),
-        keras.layers.MaxPooling2D(pool_size=(2, 2)),
-        keras.layers.Dropout(0.4),
-        
-        keras.layers.Conv2D(64, kernel_size=(3, 3),
-                            activation='relu',
-                            input_shape=input_shape,
-                            padding="same"),  
-        keras.layers.Conv2D(64, kernel_size=(3, 3),
-                            activation='relu'),
-        keras.layers.MaxPooling2D(pool_size=(2, 2)),
-        keras.layers.Dropout(0.4),
-        
-        keras.layers.Conv2D(64, kernel_size=(3, 3),
-                            activation='relu',
-                            input_shape=input_shape,
-                            padding="same"),  
-        keras.layers.Conv2D(64, kernel_size=(3, 3),
-                            activation='relu'),
-        keras.layers.MaxPooling2D(pool_size=(2, 2)),
-        keras.layers.Dropout(0.4),
-        
-        keras.layers.Flatten(),
-        
-        keras.layers.Dense(512, activation='relu'),
-        keras.layers.Dropout(0.5),
-        
-        keras.layers.Dense(10, activation='softmax')
+    if (self.test == False):
+      if(self.random_data == 1):
+        print("MNIST")
+        self.train_images = self.trim
+        self.train_labels = self.trlm
+        self.test_images = self.teim
+        self.test_labels = self.telm
+        self.train_images = self.train_images / 255.0
+        self.test_images = self.test_images / 255.0
+        self.model = keras.Sequential([
+          keras.layers.Flatten(input_shape=(28, 28)),
+          keras.layers.Dense(100, activation='relu'),
+          keras.layers.Dense(10, activation='softmax'),
       ])
+      else:
+        print("CIFAR10")
+        self.train_images = self.tric10
+        self.train_labels = self.trlc10
+        self.test_images = self.teic10
+        self.test_labels = self.telc10
+        self.train_images = self.train_images.astype('float32')
+        self.test_images = self.test_images.astype('float32')
+        self.train_images /= 255
+        self.test_images /= 255
+        self.train_labels = self.train_labels.flatten()
+        self.test_labels = self.test_labels.flatten()
+        input_shape = (32,32,3)
+        self.model = keras.Sequential([
+          keras.layers.Conv2D(32, kernel_size=(3, 3),
+                              activation='relu',
+                              input_shape=input_shape,
+                              padding="same"),  
+          keras.layers.Conv2D(32, kernel_size=(3, 3),
+                              activation='relu'),
+          keras.layers.MaxPooling2D(pool_size=(2, 2)),
+          keras.layers.Dropout(0.4),
+          
+          keras.layers.Conv2D(64, kernel_size=(3, 3),
+                              activation='relu',
+                              input_shape=input_shape,
+                              padding="same"),  
+          keras.layers.Conv2D(64, kernel_size=(3, 3),
+                              activation='relu'),
+          keras.layers.MaxPooling2D(pool_size=(2, 2)),
+          keras.layers.Dropout(0.4),
+          
+          keras.layers.Conv2D(64, kernel_size=(3, 3),
+                              activation='relu',
+                              input_shape=input_shape,
+                              padding="same"),  
+          keras.layers.Conv2D(64, kernel_size=(3, 3),
+                              activation='relu'),
+          keras.layers.MaxPooling2D(pool_size=(2, 2)),
+          keras.layers.Dropout(0.4),
+          
+          keras.layers.Flatten(),
+          
+          keras.layers.Dense(512, activation='relu'),
+          keras.layers.Dropout(0.5),
+          
+          keras.layers.Dense(10, activation='softmax')
+        ])
     else:
-      (self.train_images, self.train_labels), (self.test_images, self.test_labels) = keras.datasets.cifar100.load_data()
+      print("CIFAR100")
+      self.train_images = self.tric100
+      self.train_labels = self.trlc100
+      self.test_images = self.teic100
+      self.test_labels = self.telc100
       input_shape = (32, 32, 3)
       self.train_images = self.train_images.astype('float32')
       self.test_images = self.test_images.astype('float32')
@@ -252,3 +205,9 @@ class RlfhoEnv(gym.Env):
     self.model.fit(self.train_images, self.train_labels, validation_split = 0.1, epochs=3)
     test_loss,test_acc = self.model.evaluate(self.test_images,  self.test_labels, verbose=2)
     return test_acc
+
+  def getRewardHistory(self):
+    return self.rewards_history
+
+  def getAccuracyHistory(self):
+    return self.accuracy_history
